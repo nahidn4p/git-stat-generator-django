@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}GitHub Stats Generator{% endblock %}</title>
+    {% load static %}
+    <link rel="stylesheet" href="{% static 'css/output.css' %}">
+    <style>
+        :root {
+            --accent-color: {% if theme %}{{ theme.accent_color }}{% else %}#00d4ff{% endif %};
+            --accent-light: {% if theme %}{{ theme.accent_color_light }}{% else %}#33dfff{% endif %};
+            --success-color: {% if theme %}{{ theme.success_color }}{% else %}#10b981{% endif %};
+            --warning-color: {% if theme %}{{ theme.warning_color }}{% else %}#f59e0b{% endif %};
+            --chart-line: {% if theme %}{{ theme.chart_line_color }}{% else %}#00d4ff{% endif %};
+            --chart-fill: {% if theme %}{{ theme.chart_fill_color }}{% else %}rgba(0, 212, 255, 0.1){% endif %};
+        }
+    </style>
+</head>
+<body class="{% if theme %}{{ theme.body_classes }}{% else %}theme-neon-dark bg-dark-bg{% endif %} min-h-screen relative">
+    <nav class="sticky top-0 z-50 backdrop-blur-xl border-b border-white/10 px-6 py-4 mb-8">
+        <div class="max-w-7xl mx-auto flex justify-between items-center relative z-10">
+            <a href="{% url 'home' %}" class="text-2xl font-display font-bold gradient-text hover:opacity-80 transition-opacity duration-300">
+                GitHub Stats
+            </a>
+            <div class="flex items-center gap-4">
+                <form method="post" action="{% url 'set_theme' %}" class="flex items-center gap-3">
+                    {% csrf_token %}
+                    <input type="hidden" name="redirect" value="{{ request.get_full_path }}">
+                    <label for="theme-select" class="{% if theme %}{{ theme.text_secondary }}{% else %}text-gray-400{% endif %} text-sm font-medium">Theme:</label>
+                    <select name="theme" id="theme-select" onchange="this.form.submit()" class="glass-card px-4 py-2 rounded-xl {% if theme %}{{ theme.text_primary }}{% else %}text-gray-100{% endif %} text-sm font-medium focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-transparent transition-all duration-300 cursor-pointer" style="focus-ring-color: var(--accent-color);">
+                        {% for theme_option in all_themes %}
+                            <option value="{{ theme_option.id }}" {% if theme_option.id == theme_id %}selected{% endif %}>
+                                {{ theme_option.name }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </form>
+            </div>
+        </div>
+    </nav>
+    
+    <main class="max-w-7xl mx-auto px-6 py-8 relative z-10">
+        {% block content %}{% endblock %}
+    </main>
+    
+    {% block scripts %}{% endblock %}
+</body>
+</html>
+
