@@ -158,6 +158,76 @@ def generate_badge_svg(stats: GitHubStats, theme) -> str:
     safe_username = escape(stats.username)
     safe_name = escape(stats.name[:40] if stats.name and len(stats.name) > 40 else (stats.name or safe_username))
     
+    # Get theme colors
+    accent_color = theme.accent_color
+    accent_color_light = theme.accent_color_light
+    
+    # Convert Tailwind text color classes to hex
+    def convert_tailwind_color(tailwind_class):
+        """Convert Tailwind color class to hex value."""
+        if not tailwind_class.startswith('text-'):
+            return tailwind_class  # Already a hex color
+        
+        # Tailwind gray scale mapping
+        gray_map = {
+            'gray-50': '#f9fafb',
+            'gray-100': '#f3f4f6',
+            'gray-200': '#e5e7eb',
+            'gray-300': '#d1d5db',
+            'gray-400': '#9ca3af',
+            'gray-500': '#6b7280',
+            'gray-600': '#4b5563',
+            'gray-700': '#374151',
+            'gray-800': '#1f2937',
+            'gray-900': '#111827',
+            'gray-950': '#030712',
+        }
+        
+        color_class = tailwind_class.replace('text-', '')
+        return gray_map.get(color_class, '#ffffff')
+    
+    text_primary = convert_tailwind_color(theme.text_primary)
+    text_secondary = convert_tailwind_color(theme.text_secondary)
+    
+    # Determine if theme is light or dark
+    is_light_theme = theme.id == 'light_clean'
+    
+    # Theme-dependent background colors
+    if is_light_theme:
+        bg_color = '#ffffff'
+        bg_overlay_opacity = '0.1'
+        header_bg = '#f9fafb'
+        header_overlay_opacity = '0.2'
+        card_bg = '#ffffff'
+        card_text_secondary = '#6b7280'
+        decorative_circle_fill = 'rgba(0,0,0,0.05)'
+        avatar_bg = 'rgba(0,0,0,0.05)'
+        avatar_stroke = 'rgba(0,0,0,0.1)'
+        rating_bg = 'rgba(0,0,0,0.1)'
+        footer_bg = '#f9fafb'
+        footer_overlay_opacity = '0.2'
+        username_fill = '#111827'
+        name_fill = 'rgba(17,24,39,0.8)'
+        rating_label_fill = 'rgba(17,24,39,0.7)'
+        github_logo_fill = '#24292f'
+    else:
+        bg_color = '#0a0e27'
+        bg_overlay_opacity = '0.3'
+        header_bg = '#141b2d'
+        header_overlay_opacity = '0.4'
+        card_bg = '#1a2332'
+        card_text_secondary = '#9ca3af'
+        decorative_circle_fill = 'rgba(0,0,0,0.3)'
+        avatar_bg = 'rgba(255,255,255,0.15)'
+        avatar_stroke = 'rgba(255,255,255,0.3)'
+        rating_bg = 'rgba(0,0,0,0.4)'
+        footer_bg = '#141b2d'
+        footer_overlay_opacity = '0.3'
+        username_fill = '#ffffff'
+        name_fill = 'rgba(255,255,255,0.8)'
+        rating_label_fill = 'rgba(255,255,255,0.7)'
+        github_logo_fill = '#ffffff'
+    
     # Calculate rating with colors
     rating = "C+"
     rating_color = "#f59e0b"
@@ -173,6 +243,54 @@ def generate_badge_svg(stats: GitHubStats, theme) -> str:
     
     # Get top language
     top_language = escape(stats.languages[0]['name'][:12]) if stats.languages else 'N/A'
+    top_language_full = stats.languages[0]['name'] if stats.languages else 'N/A'
+    
+    # Language icon/abbreviation mapping
+    def get_language_icon(lang_name):
+        """Get a simple icon representation for a language."""
+        if not lang_name or lang_name == 'N/A':
+            return '?', ''
+        
+        lang_lower = lang_name.lower()
+        # Common language abbreviations
+        lang_icons = {
+            'python': 'Py',
+            'javascript': 'JS',
+            'typescript': 'TS',
+            'java': 'J',
+            'c++': 'C+',
+            'c#': 'C#',
+            'go': 'Go',
+            'rust': 'Rs',
+            'php': 'PHP',
+            'ruby': 'Rb',
+            'swift': 'Sw',
+            'kotlin': 'Kt',
+            'dart': 'Dt',
+            'html': 'H',
+            'css': 'C',
+            'scss': 'S',
+            'shell': 'Sh',
+            'bash': 'B',
+            'powershell': 'PS',
+            'sql': 'SQL',
+            'r': 'R',
+            'matlab': 'M',
+            'scala': 'Sc',
+            'perl': 'Pl',
+        }
+        
+        # Check for exact match or partial match
+        for key, icon in lang_icons.items():
+            if key in lang_lower or lang_lower in key:
+                return icon, ''
+        
+        # Default: use first 2-3 letters
+        if len(lang_name) >= 3:
+            return lang_name[:3].upper(), ''
+        return lang_name[0].upper(), ''
+    
+    lang_icon_text, lang_icon_path = get_language_icon(top_language_full)
     
     # Format large numbers
     def format_number(num):
@@ -186,7 +304,7 @@ def generate_badge_svg(stats: GitHubStats, theme) -> str:
     width = 700
     height = 380
     
-    # Colorful gradients for stat cards
+    # Colorful gradients for stat cards (keep colorful as per user preference)
     stat_gradients = [
         ("#667eea", "#764ba2"),  # Stars - Purple
         ("#f093fb", "#f5576c"),  # Repos - Pink
@@ -198,25 +316,28 @@ def generate_badge_svg(stats: GitHubStats, theme) -> str:
         ("#a8edea", "#fed6e3"),  # Language - Light
     ]
     
+    # GitHub logo SVG path (GitHub mark)
+    github_logo_path = "M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.012 8.012 0 0 0 16 8c0-4.42-3.58-8-8-8z"
+    
     svg_content = f'''<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="{width}" height="{height}">
         <defs>
-            <!-- Animated background gradient -->
+            <!-- Animated background gradient using theme colors -->
             <linearGradient id="bgGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" style="stop-color:#667eea;stop-opacity:1">
-                    <animate attributeName="stop-color" values="#667eea;#764ba2;#f093fb;#667eea" dur="15s" repeatCount="indefinite"/>
+                <stop offset="0%" style="stop-color:{accent_color};stop-opacity:1">
+                    <animate attributeName="stop-color" values="{accent_color};{accent_color_light};{accent_color};{accent_color}" dur="15s" repeatCount="indefinite"/>
                 </stop>
-                <stop offset="50%" style="stop-color:#764ba2;stop-opacity:1">
-                    <animate attributeName="stop-color" values="#764ba2;#f093fb;#667eea;#764ba2" dur="15s" repeatCount="indefinite"/>
+                <stop offset="50%" style="stop-color:{accent_color_light};stop-opacity:1">
+                    <animate attributeName="stop-color" values="{accent_color_light};{accent_color};{accent_color_light};{accent_color_light}" dur="15s" repeatCount="indefinite"/>
                 </stop>
-                <stop offset="100%" style="stop-color:#f093fb;stop-opacity:1">
-                    <animate attributeName="stop-color" values="#f093fb;#667eea;#764ba2;#f093fb" dur="15s" repeatCount="indefinite"/>
+                <stop offset="100%" style="stop-color:{accent_color};stop-opacity:0.8">
+                    <animate attributeName="stop-color" values="{accent_color};{accent_color_light};{accent_color};{accent_color}" dur="15s" repeatCount="indefinite"/>
                 </stop>
             </linearGradient>
             
-            <!-- Header gradient -->
+            <!-- Header gradient using theme colors -->
             <linearGradient id="headerGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" style="stop-color:#667eea;stop-opacity:1" />
-                <stop offset="100%" style="stop-color:#764ba2;stop-opacity:1" />
+                <stop offset="0%" style="stop-color:{accent_color};stop-opacity:1" />
+                <stop offset="100%" style="stop-color:{accent_color_light};stop-opacity:1" />
             </linearGradient>
             
             <!-- Rating gradient -->
@@ -279,45 +400,57 @@ def generate_badge_svg(stats: GitHubStats, theme) -> str:
             </circle>
         </defs>
         
-        <!-- Background with animated gradient -->
-        <rect width="{width}" height="{height}" fill="url(#bgGradient)" rx="20"/>
+        <!-- Theme-dependent background with animated gradient -->
+        <rect width="{width}" height="{height}" fill="{bg_color}" rx="20"/>
+        <rect width="{width}" height="{height}" fill="url(#bgGradient)" rx="20" opacity="{bg_overlay_opacity}"/>
         
         <!-- Decorative circles -->
-        <circle cx="50" cy="50" r="80" fill="rgba(255,255,255,0.05)"/>
-        <circle cx="{width-50}" cy="{height-50}" r="100" fill="rgba(255,255,255,0.05)"/>
+        <circle cx="50" cy="50" r="80" fill="{decorative_circle_fill}"/>
+        <circle cx="{width-50}" cy="{height-50}" r="100" fill="{decorative_circle_fill}"/>
         
-        <!-- Header Section -->
-        <rect width="{width}" height="100" fill="url(#headerGrad)" rx="20"/>
-        <use href="#rotatingCircle" x="350" y="50" opacity="0.3"/>
+        <!-- Theme-dependent Header Section -->
+        <rect width="{width}" height="100" fill="{header_bg}" rx="20"/>
+        <rect width="{width}" height="100" fill="url(#headerGrad)" rx="20" opacity="{header_overlay_opacity}"/>
+        <use href="#rotatingCircle" x="350" y="50" opacity="0.1"/>
         
         <!-- Avatar circle with glow -->
         <a xlink:href="https://github.com/{safe_username}" target="_blank">
-            <circle cx="60" cy="50" r="35" fill="rgba(255,255,255,0.2)" filter="url(#glow)"/>
-            <circle cx="60" cy="50" r="32" fill="white" opacity="0.1"/>
+            <circle cx="60" cy="50" r="35" fill="{avatar_bg}" filter="url(#glow)"/>
+            <circle cx="60" cy="50" r="32" fill="rgba(0,0,0,0.1)"/>
             <image xlink:href="{stats.avatar_url}" x="25" y="15" width="70" height="70" clip-path="circle(35px at 60px 50px)"/>
-            <circle cx="60" cy="50" r="35" fill="none" stroke="rgba(255,255,255,0.4)" stroke-width="2"/>
+            <circle cx="60" cy="50" r="35" fill="none" stroke="{avatar_stroke}" stroke-width="2"/>
+        </a>
+        
+        <!-- GitHub Logo next to avatar (no circle) -->
+        <a xlink:href="https://github.com/{safe_username}" target="_blank">
+            <g transform="translate(110, 50)">
+                <g transform="translate(-12, -12) scale(0.4)">
+                    <path d="{github_logo_path}" fill="{github_logo_fill}" opacity="1"/>
+                </g>
+                <title>View GitHub profile for {safe_username}</title>
+            </g>
         </a>
         
         <!-- Username -->
         <a xlink:href="https://github.com/{safe_username}" target="_blank" style="text-decoration: none;">
-            <text x="110" y="45" font-family="Inter, system-ui, sans-serif" font-size="28" font-weight="700" fill="#ffffff" filter="url(#shadow)">
+            <text x="150" y="45" font-family="Inter, system-ui, sans-serif" font-size="28" font-weight="700" fill="{username_fill}" filter="url(#shadow)">
                 {safe_username}
             </text>
         </a>
         
         <!-- Name -->
-        <text x="110" y="70" font-family="Inter, system-ui, sans-serif" font-size="14" fill="rgba(255,255,255,0.9)">
+        <text x="150" y="70" font-family="Inter, system-ui, sans-serif" font-size="14" fill="{name_fill}">
             {safe_name}
         </text>
         
         <!-- Rating Badge -->
         <g transform="translate({width-80}, 30)">
-            <circle r="30" fill="rgba(255,255,255,0.2)" filter="url(#glow)"/>
+            <circle r="30" fill="{rating_bg}" filter="url(#glow)"/>
             <circle r="26" fill="rgba(255,255,255,0.1)"/>
             <text x="0" y="8" font-family="Inter, system-ui, sans-serif" font-size="24" font-weight="800" fill="{rating_color}" text-anchor="middle" filter="url(#glow)">
                 {rating}
             </text>
-            <text x="0" y="22" font-family="Inter, system-ui, sans-serif" font-size="10" fill="rgba(255,255,255,0.8)" text-anchor="middle">
+            <text x="0" y="22" font-family="Inter, system-ui, sans-serif" font-size="10" fill="{rating_label_fill}" text-anchor="middle">
                 Rating
             </text>
         </g>
@@ -327,74 +460,81 @@ def generate_badge_svg(stats: GitHubStats, theme) -> str:
             <!-- Row 1 -->
             <!-- Stars -->
             <g transform="translate(0, 0)">
-                <rect x="0" y="0" width="150" height="60" rx="12" fill="white" opacity="0.95" filter="url(#shadow)"/>
+                <rect x="0" y="0" width="150" height="60" rx="12" fill="{card_bg}" opacity="0.95" filter="url(#shadow)"/>
                 <rect x="0" y="0" width="150" height="4" rx="12" fill="url(#statGrad1)"/>
-                <text x="15" y="25" font-family="Inter, system-ui, sans-serif" font-size="11" fill="#6b7280" font-weight="600">⭐ Stars</text>
+                <text x="15" y="25" font-family="Inter, system-ui, sans-serif" font-size="11" fill="{card_text_secondary}" font-weight="600">⭐ Stars</text>
                 <text x="15" y="45" font-family="Inter, system-ui, sans-serif" font-size="22" font-weight="800" fill="url(#statGrad1)">{format_number(stats.total_stars)}</text>
             </g>
             
             <!-- Repositories -->
             <g transform="translate(170, 0)">
-                <rect x="0" y="0" width="150" height="60" rx="12" fill="white" opacity="0.95" filter="url(#shadow)"/>
+                <rect x="0" y="0" width="150" height="60" rx="12" fill="{card_bg}" opacity="0.95" filter="url(#shadow)"/>
                 <rect x="0" y="0" width="150" height="4" rx="12" fill="url(#statGrad2)"/>
-                <text x="15" y="25" font-family="Inter, system-ui, sans-serif" font-size="11" fill="#6b7280" font-weight="600">📦 Repos</text>
+                <text x="15" y="25" font-family="Inter, system-ui, sans-serif" font-size="11" fill="{card_text_secondary}" font-weight="600">📦 Repos</text>
                 <text x="15" y="45" font-family="Inter, system-ui, sans-serif" font-size="22" font-weight="800" fill="url(#statGrad2)">{stats.public_repos}</text>
             </g>
             
             <!-- Followers -->
             <g transform="translate(340, 0)">
-                <rect x="0" y="0" width="150" height="60" rx="12" fill="white" opacity="0.95" filter="url(#shadow)"/>
+                <rect x="0" y="0" width="150" height="60" rx="12" fill="{card_bg}" opacity="0.95" filter="url(#shadow)"/>
                 <rect x="0" y="0" width="150" height="4" rx="12" fill="url(#statGrad3)"/>
-                <text x="15" y="25" font-family="Inter, system-ui, sans-serif" font-size="11" fill="#6b7280" font-weight="600">👥 Followers</text>
+                <text x="15" y="25" font-family="Inter, system-ui, sans-serif" font-size="11" fill="{card_text_secondary}" font-weight="600">👥 Followers</text>
                 <text x="15" y="45" font-family="Inter, system-ui, sans-serif" font-size="22" font-weight="800" fill="url(#statGrad3)">{format_number(stats.followers)}</text>
             </g>
             
             <!-- Contributions -->
             <g transform="translate(510, 0)">
-                <rect x="0" y="0" width="150" height="60" rx="12" fill="white" opacity="0.95" filter="url(#shadow)"/>
+                <rect x="0" y="0" width="150" height="60" rx="12" fill="{card_bg}" opacity="0.95" filter="url(#shadow)"/>
                 <rect x="0" y="0" width="150" height="4" rx="12" fill="url(#statGrad4)"/>
-                <text x="15" y="25" font-family="Inter, system-ui, sans-serif" font-size="11" fill="#6b7280" font-weight="600">💻 Contributions</text>
+                <text x="15" y="25" font-family="Inter, system-ui, sans-serif" font-size="11" fill="{card_text_secondary}" font-weight="600">💻 Contributions</text>
                 <text x="15" y="45" font-family="Inter, system-ui, sans-serif" font-size="22" font-weight="800" fill="url(#statGrad4)">{format_number(stats.total_contributions)}</text>
             </g>
             
             <!-- Row 2 -->
             <!-- Commits -->
             <g transform="translate(0, 80)">
-                <rect x="0" y="0" width="150" height="60" rx="12" fill="white" opacity="0.95" filter="url(#shadow)"/>
+                <rect x="0" y="0" width="150" height="60" rx="12" fill="{card_bg}" opacity="0.95" filter="url(#shadow)"/>
                 <rect x="0" y="0" width="150" height="4" rx="12" fill="url(#statGrad5)"/>
-                <text x="15" y="25" font-family="Inter, system-ui, sans-serif" font-size="11" fill="#6b7280" font-weight="600">📝 Commits (1Y)</text>
+                <text x="15" y="25" font-family="Inter, system-ui, sans-serif" font-size="11" fill="{card_text_secondary}" font-weight="600">📝 Commits (1Y)</text>
                 <text x="15" y="45" font-family="Inter, system-ui, sans-serif" font-size="22" font-weight="800" fill="url(#statGrad5)">{format_number(stats.commits_last_year)}</text>
             </g>
             
             <!-- Pull Requests -->
             <g transform="translate(170, 80)">
-                <rect x="0" y="0" width="150" height="60" rx="12" fill="white" opacity="0.95" filter="url(#shadow)"/>
+                <rect x="0" y="0" width="150" height="60" rx="12" fill="{card_bg}" opacity="0.95" filter="url(#shadow)"/>
                 <rect x="0" y="0" width="150" height="4" rx="12" fill="url(#statGrad6)"/>
-                <text x="15" y="25" font-family="Inter, system-ui, sans-serif" font-size="11" fill="#6b7280" font-weight="600">🔀 Pull Requests</text>
+                <text x="15" y="25" font-family="Inter, system-ui, sans-serif" font-size="11" fill="{card_text_secondary}" font-weight="600">🔀 Pull Requests</text>
                 <text x="15" y="45" font-family="Inter, system-ui, sans-serif" font-size="22" font-weight="800" fill="url(#statGrad6)">{stats.pull_requests_last_year}</text>
             </g>
             
             <!-- Current Streak -->
             <g transform="translate(340, 80)">
-                <rect x="0" y="0" width="150" height="60" rx="12" fill="white" opacity="0.95" filter="url(#shadow)"/>
+                <rect x="0" y="0" width="150" height="60" rx="12" fill="{card_bg}" opacity="0.95" filter="url(#shadow)"/>
                 <rect x="0" y="0" width="150" height="4" rx="12" fill="url(#statGrad7)"/>
-                <text x="15" y="25" font-family="Inter, system-ui, sans-serif" font-size="11" fill="#6b7280" font-weight="600">🔥 Current Streak</text>
+                <text x="15" y="25" font-family="Inter, system-ui, sans-serif" font-size="11" fill="{card_text_secondary}" font-weight="600">🔥 Current Streak</text>
                 <text x="15" y="45" font-family="Inter, system-ui, sans-serif" font-size="22" font-weight="800" fill="url(#statGrad7)">{stats.current_streak} days</text>
             </g>
             
-            <!-- Top Language -->
+            <!-- Top Language with icon -->
             <g transform="translate(510, 80)">
-                <rect x="0" y="0" width="150" height="60" rx="12" fill="white" opacity="0.95" filter="url(#shadow)"/>
+                <rect x="0" y="0" width="150" height="60" rx="12" fill="{card_bg}" opacity="0.95" filter="url(#shadow)"/>
                 <rect x="0" y="0" width="150" height="4" rx="12" fill="url(#statGrad8)"/>
-                <text x="15" y="25" font-family="Inter, system-ui, sans-serif" font-size="11" fill="#6b7280" font-weight="600">💬 Top Language</text>
-                <text x="15" y="45" font-family="Inter, system-ui, sans-serif" font-size="18" font-weight="800" fill="url(#statGrad8)">{top_language}</text>
+                <text x="15" y="25" font-family="Inter, system-ui, sans-serif" font-size="11" fill="{card_text_secondary}" font-weight="600">💬 Top Language</text>
+                <g transform="translate(15, 35)">
+                    <rect x="-10" y="-10" width="20" height="20" rx="4" fill="url(#statGrad8)" opacity="0.2"/>
+                    <text x="0" y="5" font-family="Inter, system-ui, sans-serif" font-size="9" fill="url(#statGrad8)" text-anchor="middle" font-weight="700">
+                        {lang_icon_text}
+                    </text>
+                </g>
+                <text x="30" y="45" font-family="Inter, system-ui, sans-serif" font-size="15" font-weight="800" fill="url(#statGrad8)">{top_language}</text>
             </g>
         </g>
         
-        <!-- Footer -->
-        <rect x="0" y="{height-50}" width="{width}" height="50" fill="url(#headerGrad)" rx="0 0 20 20"/>
+        <!-- Theme-dependent Footer -->
+        <rect x="0" y="{height-50}" width="{width}" height="50" fill="{footer_bg}" rx="0 0 20 20"/>
+        <rect x="0" y="{height-50}" width="{width}" height="50" fill="url(#headerGrad)" rx="0 0 20 20" opacity="{footer_overlay_opacity}"/>
         <a xlink:href="https://github.com/{safe_username}" target="_blank" style="text-decoration: none;">
-            <text x="{width/2}" y="{height-20}" font-family="Inter, system-ui, sans-serif" font-size="14" font-weight="600" fill="#ffffff" text-anchor="middle">
+            <text x="{width/2}" y="{height-20}" font-family="Inter, system-ui, sans-serif" font-size="14" font-weight="600" fill="{username_fill}" text-anchor="middle">
                 View on GitHub →
             </text>
         </a>
