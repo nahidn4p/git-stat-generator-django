@@ -402,16 +402,28 @@ def generate_badge_svg(stats: GitHubStats, theme) -> str:
         
         <!-- Theme-dependent background with animated gradient -->
         <rect width="{width}" height="{height}" fill="{bg_color}" rx="20"/>
-        <rect width="{width}" height="{height}" fill="url(#bgGradient)" rx="20" opacity="{bg_overlay_opacity}"/>
+        <rect width="{width}" height="{height}" fill="url(#bgGradient)" rx="20" opacity="{bg_overlay_opacity}">
+            <animate attributeName="opacity" values="{bg_overlay_opacity};0.5;{bg_overlay_opacity}" dur="4s" repeatCount="indefinite"/>
+        </rect>
         
-        <!-- Decorative circles -->
-        <circle cx="50" cy="50" r="80" fill="{decorative_circle_fill}"/>
-        <circle cx="{width-50}" cy="{height-50}" r="100" fill="{decorative_circle_fill}"/>
+        <!-- Decorative circles with animation -->
+        <circle cx="50" cy="50" r="80" fill="{decorative_circle_fill}">
+            <animate attributeName="r" values="80;85;80" dur="6s" repeatCount="indefinite"/>
+            <animate attributeName="opacity" values="0.3;0.5;0.3" dur="4s" repeatCount="indefinite"/>
+        </circle>
+        <circle cx="{width-50}" cy="{height-50}" r="100" fill="{decorative_circle_fill}">
+            <animate attributeName="r" values="100;105;100" dur="8s" repeatCount="indefinite"/>
+            <animate attributeName="opacity" values="0.3;0.5;0.3" dur="5s" repeatCount="indefinite"/>
+        </circle>
         
         <!-- Theme-dependent Header Section -->
         <rect width="{width}" height="100" fill="{header_bg}" rx="20"/>
-        <rect width="{width}" height="100" fill="url(#headerGrad)" rx="20" opacity="{header_overlay_opacity}"/>
-        <use href="#rotatingCircle" x="350" y="50" opacity="0.1"/>
+        <rect width="{width}" height="100" fill="url(#headerGrad)" rx="20" opacity="{header_overlay_opacity}">
+            <animate attributeName="opacity" values="{header_overlay_opacity};0.6;{header_overlay_opacity}" dur="3s" repeatCount="indefinite"/>
+        </rect>
+        <use href="#rotatingCircle" x="350" y="50" opacity="0.2">
+            <animate attributeName="opacity" values="0.2;0.35;0.2" dur="5s" repeatCount="indefinite"/>
+        </use>
         
         <!-- Avatar circle with glow -->
         <a xlink:href="https://github.com/{safe_username}" target="_blank">
