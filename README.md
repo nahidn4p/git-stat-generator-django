@@ -13,7 +13,10 @@ A beautiful Django-based GitHub statistics dashboard with multiple theme support
 - ⚡ Caching for optimal performance
 - 📱 Responsive design
 
-## Screenshots
+## Screenshot
+
+<img width="600" height="400" alt="11111" src="https://github.com/user-attachments/assets/5b961834-8071-460a-b6f5-8a56512a97ec" />
+
 
 The dashboard displays:
 - User profile information
