@@ -13,11 +13,6 @@ A beautiful Django-based GitHub statistics dashboard with multiple theme support
 - ⚡ Caching for optimal performance
 - 📱 Responsive design
 
-## Screenshot
-
-<img width="600" height="400" alt="11111" src="https://github.com/user-attachments/assets/5b961834-8071-460a-b6f5-8a56512a97ec" />
-
-
 The dashboard displays:
 - User profile information
 - Total contributions and activity
@@ -170,6 +165,12 @@ Stats are cached for 30 minutes by default. You can change this in `github_stats
 ```python
 GITHUB_CACHE_TIMEOUT = 1800  # seconds
 ```
+
+## Screenshot
+
+<img width="600" height="400" alt="11111" src="https://github.com/user-attachments/assets/5b961834-8071-460a-b6f5-8a56512a97ec" />
+<img width="500" height="700" alt="Screenshot 2026-01-06 at 23-44-27 nahidn4p - GitHub Stats" src="https://github.com/user-attachments/assets/7e99c9c6-4da4-44d2-b244-2f63387ace62" />
+
 
 ## Project Structure
 
