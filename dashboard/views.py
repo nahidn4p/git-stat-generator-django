@@ -6,9 +6,12 @@ from django.http import HttpResponse, HttpResponseBadRequest
 from django.views.decorators.cache import cache_page
 from django.views.decorators.http import require_http_methods
 from django.utils.html import escape
+from django.core.cache import cache
 from .services.github_client import GitHubClient, GitHubStats
 from .themes import get_theme, get_all_themes, DEFAULT_THEME
 import json
+import requests
+import base64
 
 
 def home_view(request):
@@ -151,6 +154,38 @@ def badge_view(request, username):
         return HttpResponse(svg, content_type='image/svg+xml', status=500)
 
 
+def get_avatar_base64(avatar_url: str) -> str:
+    """Fetch avatar image and convert to base64 data URI to avoid CORS issues."""
+    cache_key = f"avatar_base64_{avatar_url}"
+    cached = cache.get(cache_key)
+    if cached:
+        return cached
+    
+    try:
+        # Fetch the image
+        response = requests.get(avatar_url, timeout=5, headers={
+            'User-Agent': 'GitHub-Stats-Generator/1.0'
+        })
+        response.raise_for_status()
+        
+        # Determine content type
+        content_type = response.headers.get('Content-Type', 'image/png')
+        if 'image' not in content_type:
+            content_type = 'image/png'
+        
+        # Encode to base64
+        image_data = base64.b64encode(response.content).decode('utf-8')
+        data_uri = f"data:{content_type};base64,{image_data}"
+        
+        # Cache for 1 hour
+        cache.set(cache_key, data_uri, 3600)
+        return data_uri
+    except Exception as e:
+        # Return None to use fallback
+        print(f"Error fetching avatar: {e}")
+        return None
+
+
 def generate_badge_svg(stats: GitHubStats, theme) -> str:
     """Generate modern, colorful SVG badge with comprehensive GitHub stats."""
     
@@ -228,18 +263,53 @@ def generate_badge_svg(stats: GitHubStats, theme) -> str:
         rating_label_fill = 'rgba(255,255,255,0.7)'
         github_logo_fill = '#ffffff'
     
-    # Calculate rating with colors
-    rating = "C+"
-    rating_color = "#f59e0b"
-    if stats.total_stars > 100:
-        rating = "B+"
-        rating_color = "#10b981"
-    if stats.total_stars > 500:
-        rating = "A"
-        rating_color = "#3b82f6"
-    if stats.total_stars > 1000:
-        rating = "A+"
-        rating_color = "#8b5cf6"
+    # Calculate comprehensive rating based on multiple metrics
+    def calculate_rating(stats):
+        """Calculate rating based on multiple GitHub metrics with weighted scoring."""
+        score = 0
+        
+        # Stars: 0-35 points (max at 1500+ stars) - Most visible metric
+        stars_score = min(35, (stats.total_stars / 1500) * 35)
+        score += stars_score
+        
+        # Contributions: 0-25 points (max at 4000+ contributions) - Shows activity
+        contributions_score = min(25, (stats.total_contributions / 4000) * 25)
+        score += contributions_score
+        
+        # Commits: 0-20 points (max at 1500+ commits/year) - Development activity
+        commits_score = min(20, (stats.commits_last_year / 1500) * 20)
+        score += commits_score
+        
+        # Pull Requests: 0-12 points (max at 150+ PRs/year) - Collaboration
+        prs_score = min(12, (stats.pull_requests_last_year / 150) * 12)
+        score += prs_score
+        
+        # Repositories: 0-8 points (max at 80+ repos) - Project diversity
+        repos_score = min(8, (stats.public_repos / 80) * 8)
+        score += repos_score
+        
+        # Determine rating based on total score (out of 100)
+        if score >= 75:
+            return "A+", "#8b5cf6"
+        elif score >= 55:
+            return "A", "#3b82f6"
+        elif score >= 35:
+            return "B+", "#10b981"
+        else:
+            return "C+", "#f59e0b"
+    
+    rating, rating_color = calculate_rating(stats)
+    
+    # Get avatar as base64 to avoid CORS issues (after all theme colors are defined)
+    avatar_data_uri = get_avatar_base64(stats.avatar_url)
+    
+    # Build avatar image tag with proper circular clipping
+    if avatar_data_uri:
+        avatar_image_tag = f'<image href="{avatar_data_uri}" x="25" y="15" width="70" height="70" clip-path="url(#avatarClip)" preserveAspectRatio="xMidYMid cover"/>'
+    else:
+        # Fallback to initials if image fails to load
+        initial = safe_username[0].upper() if safe_username else "?"
+        avatar_image_tag = f'<circle cx="60" cy="50" r="30" fill="{accent_color}" opacity="0.3"/><text x="60" y="55" font-family="Inter, system-ui, sans-serif" font-size="24" font-weight="700" fill="{username_fill}" text-anchor="middle">{initial}</text>'
     
     # Get top language
     top_language = escape(stats.languages[0]['name'][:12]) if stats.languages else 'N/A'
@@ -398,6 +468,11 @@ def generate_badge_svg(stats: GitHubStats, theme) -> str:
             <circle id="rotatingCircle" r="200" fill="rgba(255,255,255,0.1)">
                 <animateTransform attributeName="transform" type="rotate" values="0 350 90;360 350 90" dur="20s" repeatCount="indefinite"/>
             </circle>
+            
+            <!-- Circular clip path for avatar -->
+            <clipPath id="avatarClip">
+                <circle cx="60" cy="50" r="35"/>
+            </clipPath>
         </defs>
         
         <!-- Theme-dependent background with animated gradient -->
@@ -429,7 +504,7 @@ def generate_badge_svg(stats: GitHubStats, theme) -> str:
         <a xlink:href="https://github.com/{safe_username}" target="_blank">
             <circle cx="60" cy="50" r="35" fill="{avatar_bg}" filter="url(#glow)"/>
             <circle cx="60" cy="50" r="32" fill="rgba(0,0,0,0.1)"/>
-            <image xlink:href="{stats.avatar_url}" x="25" y="15" width="70" height="70" clip-path="circle(35px at 60px 50px)"/>
+            {avatar_image_tag}
             <circle cx="60" cy="50" r="35" fill="none" stroke="{avatar_stroke}" stroke-width="2"/>
         </a>
         
