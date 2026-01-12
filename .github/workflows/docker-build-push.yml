@@ -65,5 +65,11 @@ jobs:
 
       - name: Image digest
         if: github.event_name != 'pull_request'
-        run: echo "Image pushed with digest: ${{ steps.build.outputs.digest }}"
+        run: |
+            DIGEST="${{ steps.build.outputs.digest }}"
+            if [ -n "$DIGEST" ]; then
+              echo "Image pushed with digest: $DIGEST"
+            else
+              echo "No digest available (push may have been skipped)"
+            fi
         
