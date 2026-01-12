@@ -51,6 +51,7 @@ jobs:
             type=raw,value=latest,enable={{is_default_branch}}
 
       - name: Build and push Docker image
+        id: build                           # ← Added this ID
         uses: docker/build-push-action@v5
         with:
           context: .
@@ -64,4 +65,4 @@ jobs:
 
       - name: Image digest
         if: github.event_name != 'pull_request'
-        run: echo "Image pushed with digest: ${{ steps['build-and-push'].outputs.digest }}"
+        run: echo "Image pushed with digest: ${{ steps.build.outputs.digest }}"   # ← Fixed reference
