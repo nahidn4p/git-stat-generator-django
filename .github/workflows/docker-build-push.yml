@@ -63,16 +63,26 @@ jobs:
           cache-to: type=gha,mode=max
           platforms: linux/amd64
 
+      # ✅ FINAL SUMMARY STEP (PUT LAST)
       - name: Docker Image Summary
         if: github.event_name != 'pull_request'
+        shell: bash
         run: |
           IMAGE="${{ secrets.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME }}"
-          TAG="$(echo "${{ steps.meta.outputs.tags }}" | head -n 1)"
+
+          # Extract first tag safely
+          TAG=$(printf "%s\n" "${{ steps.meta.outputs.tags }}" | sed -n '1p')
+
           DIGEST="${{ steps.build.outputs.digest }}"
 
           SIZE_BYTES=$(docker buildx imagetools inspect "$TAG" \
-            --format '{{.Manifest.Size}}' 2>/dev/null || echo 0)
-          SIZE_MB=$(awk "BEGIN {printf \"%.2f MB\", $SIZE_BYTES/1024/1024}")
+            --format '{{.Manifest.Size}}' 2>/dev/null)
+
+          if [[ "$SIZE_BYTES" =~ ^[0-9]+$ ]]; then
+            SIZE_MB=$(awk -v s="$SIZE_BYTES" 'BEGIN { printf "%.2f MB", s/1024/1024 }')
+          else
+            SIZE_MB="N/A"
+          fi
 
           {
             echo "## 🐳 Docker Image Published"
