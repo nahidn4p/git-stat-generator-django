@@ -68,14 +68,17 @@ jobs:
         if: github.event_name != 'pull_request'
         shell: bash
         run: |
-          IMAGE="${{ secrets.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME }}"
+          # Use public name for display
+          PUBLIC_IMAGE="r1y4d/github-stat-generator"
 
-          # Extract first tag safely
+          # Get first tag safely
           TAG=$(printf "%s\n" "${{ steps.meta.outputs.tags }}" | sed -n '1p')
+
+          REMOTE_IMAGE="docker.io/$TAG"
 
           DIGEST="${{ steps.build.outputs.digest }}"
 
-          SIZE_BYTES=$(docker buildx imagetools inspect "$TAG" \
+          SIZE_BYTES=$(docker buildx imagetools inspect "$REMOTE_IMAGE" \
             --format '{{.Manifest.Size}}' 2>/dev/null)
 
           if [[ "$SIZE_BYTES" =~ ^[0-9]+$ ]]; then
@@ -87,7 +90,7 @@ jobs:
           {
             echo "## 🐳 Docker Image Published"
             echo ""
-            echo "**Image:** \`$IMAGE\`"
+            echo "**Image:** \`$PUBLIC_IMAGE\`"
             echo ""
             echo "**Tag:** \`$TAG\`"
             echo ""
@@ -98,7 +101,7 @@ jobs:
             echo "$DIGEST"
             echo '```'
             echo ""
-            echo "🔗 **Docker Hub:** https://hub.docker.com/r/$IMAGE"
+            echo "🔗 **Docker Hub:** https://hub.docker.com/r/$PUBLIC_IMAGE"
             echo ""
             echo "✅ Image was successfully built and pushed."
           } >> "$GITHUB_STEP_SUMMARY"
