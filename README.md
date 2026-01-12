@@ -168,7 +168,10 @@ GITHUB_CACHE_TIMEOUT = 1800  # seconds
 
 ## Screenshot
 
-<img width="600" height="400" alt="11111" src="https://github.com/user-attachments/assets/5b961834-8071-460a-b6f5-8a56512a97ec" />
+![GitHub stats](https://gitstats.pythonanywhere.com/badge/nahidn4p.svg?theme=neon_dark) 
+
+<img src="https://gitstats.pythonanywhere.com/badge/nahidn4p.svg?theme=neon_dark" alt="GitHub stats" width="300"/>
+
 <img width="500" height="700" alt="Screenshot 2026-01-06 at 23-44-27 nahidn4p - GitHub Stats" src="https://github.com/user-attachments/assets/7e99c9c6-4da4-44d2-b244-2f63387ace62" />
 
 
